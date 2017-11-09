@@ -35,9 +35,24 @@ sealed trait StudentStorage {
   def addScore(studentId: StudentId, courseId: CourseId, score: Int): Future[Unit]
 
   def listOutstandingStudents(minAvgScore: Int): Observable[ListStudent]
+
+  def getBestStudent: Future[Student]
 }
 
 class MongoStudentStorage extends StudentStorage with MongoStorage {
+  private val codecRegistry = fromRegistries(fromProviders(classOf[CourseScore], classOf[Student], classOf[ListStudent]), DEFAULT_CODEC_REGISTRY)
+  private val studentCollection = db.getCollection[Student]("students").withCodecRegistry(codecRegistry)
+
+  override def getBestStudent: Future[Student] = studentCollection.aggregate(Seq(project(Document(
+    """{_id: "$_id",
+      |firstName: "$firstName",
+      |lastName: "$lastName",
+      | email: "$email",
+      | courses: "$courses",
+      | avg: {$avg: "$courses.score"}}""".stripMargin)),
+    sort(descending("avg")),
+    limit(1))).head()
+
   override def listOutstandingStudents(minAvgScore: Int) = studentCollection.withDocumentClass[ListStudent]
     .aggregate(Seq(project(Document(
       """{_id: "$_id",
@@ -46,9 +61,6 @@ class MongoStudentStorage extends StudentStorage with MongoStorage {
         | email: "$email", avg: {$avg: "$courses.score"}}""".stripMargin)),
       filter(gte("avg", minAvgScore)),
       sort(descending("avg"))))
-
-  private val codecRegistry = fromRegistries(fromProviders(classOf[CourseScore], classOf[Student], classOf[ListStudent]), DEFAULT_CODEC_REGISTRY)
-  private val studentCollection = db.getCollection[Student]("students").withCodecRegistry(codecRegistry)
 
   override def getStudent(id: StudentId): Future[Option[Student]] =
     studentCollection.find(equal("_id", id)).first() toFuture() map (c => Option(c))

@@ -83,64 +83,58 @@ class StudentRoute(studentService: StudentService)(implicit executionContext: Ex
 
   val route =
     pathPrefix("students") {
-      pathPrefix(Segment) {
-        studentId =>
-          pathEndOrSingleSlash {
-            put {
-              complete("student $studentId updated")
-            } ~
-              get {
-                rejectEmptyResponse {
-                  complete(studentService.getStudent(studentId) map (_ map (_.toDto)))
-                }
-              }
-          } ~
-            pathPrefix("courses") {
-              pathEndOrSingleSlash {
-                post {
-                  entity(as[AssignCourseRequest]) {
-                    request =>
-                      complete(studentService.assign(studentId, request.courseId) map {
-                        case Failure(_) => BadRequest -> """{"result": "Error"}"""
-                        case _ => OK -> """{"result": "Ok"}"""
-                      })
-                  }
-                } ~
-                  get {
-                    complete(s"courses for student $studentId")
-                  }
-              } ~
-                pathPrefix(Segment) {
-                  courseId =>
-                    post {
-                      entity(as[AddScoreRequest]) {
-                        request =>
-                          complete {
-                            studentService.addScore(studentId, courseId, request.score)
-                              .map(_ => OK -> """{"result": "Ok"}""")
-                              .recover {
-                                case ex: Exception => BadRequest ->
-                                  s"""|{
-                                      |"result": "Error",
-                                      | "message": "${
-                                    ex.getMessage
-                                  }"
-                                      | }""".stripMargin
-                              }
-                          }
-                      }
-                    }
-                }
-            }
+      pathPrefix("top") {
+        complete(studentService.topStudent map (_.toDto))
       } ~
+        pathPrefix(Segment) {
+          studentId =>
+            pathEndOrSingleSlash {
+              put {
+                complete("student $studentId updated")
+              } ~
+                get {
+                  rejectEmptyResponse {
+                    complete(studentService.getStudent(studentId) map (_ map (_.toDto)))
+                  }
+                }
+            } ~
+              pathPrefix("courses") {
+                pathEndOrSingleSlash {
+                  post {
+                    entity(as[AssignCourseRequest]) {
+                      request =>
+                        complete(studentService.assign(studentId, request.courseId) map {
+                          case Failure(_) => BadRequest -> """{"result": "Error"}"""
+                          case _ => OK -> """{"result": "Ok"}"""
+                        })
+                    }
+                  } ~
+                    get {
+                      complete(s"courses for student $studentId")
+                    }
+                } ~
+                  pathPrefix(Segment) {
+                    courseId =>
+                      post {
+                        entity(as[AddScoreRequest]) {
+                          request =>
+                            complete {
+                              studentService.addScore(studentId, courseId, request.score)
+                                .map(_ => OK -> """{"result": "Ok"}""")
+                                .recover {
+                                  case ex: Exception => BadRequest ->
+                                    s"""|{
+                                        |"result": "Error",
+                                        | "message": "${ex.getMessage}"
+                                        | }
+                      """.stripMargin
+                                }
+                            }
+                        }
+                      }
+                  }
+              }
+        } ~
         rootRoute
     }
 }
-
-
-
-
-
-
-
-

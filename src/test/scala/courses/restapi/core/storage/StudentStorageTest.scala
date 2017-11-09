@@ -51,7 +51,7 @@ class StudentStorageTest extends BaseServiceTest {
     }
 
     "list top students" should {
-      "get all students with avarage score above 90" in new Context {
+      "get all students with average score above 90" in new Context {
         val studentWithAvgScore95 = Student(new StudentId(), "Albert", "Einstein", "genius@gmail.com",
           Seq(CourseScore(new CourseId, Some(100)), CourseScore(new CourseId, Some(90))))
         val studentWithAvgScore100 = Student(new StudentId(), "Isaac", "Newton", "apple@gmail.com",
@@ -61,7 +61,22 @@ class StudentStorageTest extends BaseServiceTest {
           _ <- studentStorage.createStudent(studentWithAvgScore95)
           _ <- studentStorage.createStudent(studentWithAvgScore100)
           students <- studentStorage.listOutstandingStudents(95) toFuture()
-        } yield students shouldEqual Seq(studentWithAvgScore100, studentWithAvgScore95).map(_.toListStudent) )
+        } yield students shouldEqual Seq(studentWithAvgScore100, studentWithAvgScore95).map(_.toListStudent))
+      }
+    }
+
+    "get the best student" should {
+      "return the student with the highest average score" in new Context {
+        val studentWithAvgScore95 = Student(new StudentId(), "Albert", "Einstein", "genius@gmail.com",
+          Seq(CourseScore(new CourseId, Some(100)), CourseScore(new CourseId, Some(90))))
+        val studentWithAvgScore100 = Student(new StudentId(), "Isaac", "Newton", "apple@gmail.com",
+          Seq(CourseScore(new CourseId, Some(100))))
+        awaitForResult(for {
+          _ <- studentStorage.createStudent(studentWithAvgScore75)
+          _ <- studentStorage.createStudent(studentWithAvgScore95)
+          _ <- studentStorage.createStudent(studentWithAvgScore100)
+          student <- studentStorage.getBestStudent
+        } yield student shouldEqual studentWithAvgScore100)
       }
     }
 
@@ -132,6 +147,7 @@ class StudentStorageTest extends BaseServiceTest {
         CourseScore(new CourseId, Some(100)),
         CourseScore(new CourseId, None)))
   }
+
 }
 
 

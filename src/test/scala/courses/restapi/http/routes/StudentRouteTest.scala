@@ -112,6 +112,14 @@ class StudentRouteTest extends BaseServiceTest with SprayJsonSupport with Defaul
         }
       }
     }
+    "Get  /students/top" should {
+      "return the student with the highest avarage" in new Context {
+        Get("/students/top") ~> studentRoute ~> check {
+          responseAs[StudentDto] shouldEqual topStudent.toDto
+          status shouldBe OK
+        }
+      }
+    }
   }
 
   trait Context extends MockitoSugar {
@@ -121,6 +129,7 @@ class StudentRouteTest extends BaseServiceTest with SprayJsonSupport with Defaul
 
     val student1: Student = Student("Saar", "Wexler", "saarwexler@gmail.com")
     val student2: Student = Student("BB", "Netanyaho", "BB@gov.il")
+    val topStudent: Student = Student("Albert", "Einstein", "top@student.com")
     val outstandingStudents = Seq(
       ListStudent(new StudentId, "Albert", "Einstein", "AE@AE.com", 99),
       ListStudent(new StudentId, "Saar", "Wexler", "saarwexler@gmail.com", 100))
@@ -137,6 +146,7 @@ class StudentRouteTest extends BaseServiceTest with SprayJsonSupport with Defaul
     when(studentService.addScore(anyString, anyString, anyInt)).thenReturn(Future(throw new MongoException("bla bla")))
     when(studentService.addScore(student1._id.toHexString, courseId, 96)).thenReturn(Future())
     when(studentService.listOutstandingStudents(90)).thenReturn(Future(outstandingStudents))
+    when(studentService.topStudent).thenReturn(Future(topStudent))
 
   }
 

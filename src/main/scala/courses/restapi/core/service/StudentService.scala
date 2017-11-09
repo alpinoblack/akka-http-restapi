@@ -17,6 +17,8 @@ class StudentService(studentStorage: StudentStorage)(implicit executionContext: 
 
   def listOutstandingStudents(minAvgScore: Int) = studentStorage.listOutstandingStudents(minAvgScore) toFuture()
 
+  def topStudent = studentStorage.getBestStudent
+
   def getStudent(id: String): Future[Option[Student]] = studentStorage.getStudent(new StudentId(id))
 
   def createStudent(student: Student): Future[Completed] = studentStorage.createStudent(student)
