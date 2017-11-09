@@ -1,8 +1,10 @@
 package courses.restapi.core.storage
 
-import courses.restapi.core.CourseId
+import courses.restapi.core.storage.Course.CourseId
+import org.mongodb.scala.bson.ObjectId
 
-final object Course{
+object Course {
+  type CourseId = ObjectId
   def apply(courseName: String): Course = Course(new CourseId(), courseName)
 }
 

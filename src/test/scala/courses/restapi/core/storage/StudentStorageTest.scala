@@ -1,12 +1,11 @@
 package courses.restapi.core.storage
 
-import java.util.Observable
-
 import courses.restapi.BaseServiceTest
-import courses.restapi.core.{CourseId, StudentId}
+import courses.restapi.core.storage.Course.CourseId
+import courses.restapi.core.storage.Student.StudentId
+import courses.restapi.util._
 import org.mongodb.scala.MongoException
 import org.mongodb.scala.model.Filters
-import courses.restapi.util._
 import org.scalatest.Outcome
 
 import scala.util.Success
@@ -18,13 +17,12 @@ class StudentStorageTest extends BaseServiceTest {
     }
     finally {
       awaitForResult(
-        MongoStorage.db.getCollection("students").deleteMany(Filters.equal("firstName", "Saar")) toFuture())
+        MongoStorage.db.getCollection("students").deleteMany(Filters.in("firstName", "Saar", "Albert", "Isaac")) toFuture())
       super.afterAll()
     }
   }
 
   "StudentStorage" when {
-    import org.scalatest.Outcome
     "save and load student by id" in new Context {
       awaitForResult(for {
         _ <- studentStorage.createStudent(student1)
@@ -62,7 +60,7 @@ class StudentStorageTest extends BaseServiceTest {
           _ <- studentStorage.createStudent(studentWithAvgScore75)
           _ <- studentStorage.createStudent(studentWithAvgScore95)
           _ <- studentStorage.createStudent(studentWithAvgScore100)
-          students <- studentStorage.listTopStudents() toFuture()
+          students <- studentStorage.listOutstandingStudents(95) toFuture()
         } yield students shouldEqual Seq(studentWithAvgScore100, studentWithAvgScore95).map(_.toListStudent) )
       }
     }
@@ -126,15 +124,14 @@ class StudentStorageTest extends BaseServiceTest {
     val courseStorage = new MongoCourseStorage
     val course1 = Course("sample course")
     val course2 = Course("course 2")
+    val student1 = Student("Saar", "Wexler", "saarwexler@gmail.com")
+    val student2 = Student(new StudentId, "Saar", "Wexler", "saarwexler@hotmail.com", Seq(CourseScore(course2._id, None)))
+
     val studentWithAvgScore75 = student1
       .copy(courses = Seq(CourseScore(new CourseId(), Some(50)),
         CourseScore(new CourseId, Some(100)),
         CourseScore(new CourseId, None)))
-    val student1 = Student("Saar", "Wexler", "saarwexler@gmail.com")
-    val student2 = Student(new StudentId, "Saar", "Wexler", "saarwexler@hotmail.com", Seq(CourseScore(course2._id, None)))
   }
-
-
 }
 
 

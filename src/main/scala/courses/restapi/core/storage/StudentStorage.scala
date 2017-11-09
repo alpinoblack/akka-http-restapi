@@ -1,7 +1,8 @@
 package courses.restapi.core.storage
 
 import com.mongodb.MongoException
-import courses.restapi.core.{CourseId, StudentId}
+import courses.restapi.core.storage.Course.CourseId
+import courses.restapi.core.storage.Student.StudentId
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
 import org.mongodb.scala._
 import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
@@ -18,6 +19,7 @@ import scala.util.{Failure, Success, Try}
 
 
 sealed trait StudentStorage {
+
   def listStudentsForCourse(courseId: String): Observable[Student]
 
   def listStudents: Observable[ListStudent]
@@ -32,20 +34,18 @@ sealed trait StudentStorage {
 
   def addScore(studentId: StudentId, courseId: CourseId, score: Int): Future[Unit]
 
-  def listTopStudents : Observable[ListStudent]
+  def listOutstandingStudents(minAvgScore: Int): Observable[ListStudent]
 }
 
 class MongoStudentStorage extends StudentStorage with MongoStorage {
- override def listTopStudents = studentCollection.withDocumentClass[ListStudent]
+  override def listOutstandingStudents(minAvgScore: Int) = studentCollection.withDocumentClass[ListStudent]
     .aggregate(Seq(project(Document(
       """{_id: "$_id",
         |firstName: "$firstName",
         |lastName: "$lastName",
         | email: "$email", avg: {$avg: "$courses.score"}}""".stripMargin)),
-      filter(gt("avg", 90.00)),
+      filter(gte("avg", minAvgScore)),
       sort(descending("avg"))))
-
-
 
   private val codecRegistry = fromRegistries(fromProviders(classOf[CourseScore], classOf[Student], classOf[ListStudent]), DEFAULT_CODEC_REGISTRY)
   private val studentCollection = db.getCollection[Student]("students").withCodecRegistry(codecRegistry)

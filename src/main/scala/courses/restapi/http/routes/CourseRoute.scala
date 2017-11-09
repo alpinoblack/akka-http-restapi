@@ -18,7 +18,7 @@ final case class FullCourseDto(_id: String, name: String, students: Seq[StudentD
 trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
 
   implicit val courseFormat = jsonFormat2(CourseDto)
-  implicit val studentFormat = jsonFormat4(StudentDto)
+  implicit val studentFormat = jsonFormat5(StudentDto)
   implicit val fullCourseFormat = jsonFormat3(FullCourseDto)
 
 }

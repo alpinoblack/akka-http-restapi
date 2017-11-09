@@ -1,7 +1,7 @@
 package courses.restapi.core.storage
 
 import courses.restapi.BaseServiceTest
-import courses.restapi.core.CourseId
+import courses.restapi.core.storage.Course.CourseId
 import org.mongodb.scala.model.Filters
 
 class CourseStorageTest extends BaseServiceTest {

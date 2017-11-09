@@ -33,7 +33,7 @@ object StudentRoute {
 
     import student._
 
-    def toDto = StudentDto(Some(_id.toHexString), firstName, lastName, email, None)
+    def toDto = StudentDto(Some(_id.toHexString), firstName, lastName, email, Some(0.0))
   }
 
   implicit class ListStudentExtension(student: ListStudent) {
@@ -55,71 +55,86 @@ class StudentRoute(studentService: StudentService)(implicit executionContext: Ex
 
   import StudentRoute._
 
-  val rootRoute = pathEndOrSingleSlash {
-    get {
-      complete {
-        for {
-          students <- studentService.getStudents
-        } yield students map (_.toDto)
-      }
-    } ~
-      post {
-        entity(as[StudentDto]) { studentDto =>
+  val rootRoute =
+    pathEndOrSingleSlash {
+      get {
+        parameter('min_avg.as[Int]) { min =>
           complete {
-            studentService.createStudent(studentDto.toModel) map (_ => """{"result": "Ok"}""")
+            for {
+              students <- studentService.listOutstandingStudents(min)
+            } yield students map (_.toDto)
           }
-        }
-      }
-  }
-  val route =
-    pathPrefix("students") {
-      pathPrefix(Segment) { studentId =>
-        pathEndOrSingleSlash {
-          put {
-            complete("student $studentId updated")
-          } ~
-            get {
-              rejectEmptyResponse {
-                complete(studentService.getStudent(studentId) map (_ map (_.toDto)))
-              }
-            }
         } ~
-          pathPrefix("courses") {
-            pathEndOrSingleSlash {
-              post {
-                entity(as[AssignCourseRequest]) { request =>
-                  complete(studentService.assign(studentId, request.courseId) map {
-                    case Failure(_) => BadRequest -> """{"result": "Error"}"""
-                    case _ => OK -> """{"result": "Ok"}"""
-                  })
-                }
-              } ~
-                get {
-                  complete(s"courses for student $studentId")
-                }
-            } ~
-              pathPrefix(Segment) { courseId =>
-                post {
-                  entity(as[AddScoreRequest]) { request =>
-                    complete {
-                      studentService.addScore(studentId, courseId, request.score)
-                        .map(_ => OK -> """{"result": "Ok"}""")
-                        .recover {
-                          case ex: Exception => BadRequest ->
-                            s"""|{
-                                |"result": "Error",
-                                | "message": "${ex.getMessage}"
-                                | }""".stripMargin
-                        }
-                    }
-                  }
-                }
-              }
+          complete {
+            for {
+              students <- studentService.listStudents
+            } yield students map (_.toDto)
           }
       } ~
-      rootRoute
+        post {
+          entity(as[StudentDto]) {
+            studentDto =>
+              complete {
+                studentService.createStudent(studentDto.toModel) map (_ => """{"result": "Ok"}""")
+              }
+          }
+        }
     }
 
+  val route =
+    pathPrefix("students") {
+      pathPrefix(Segment) {
+        studentId =>
+          pathEndOrSingleSlash {
+            put {
+              complete("student $studentId updated")
+            } ~
+              get {
+                rejectEmptyResponse {
+                  complete(studentService.getStudent(studentId) map (_ map (_.toDto)))
+                }
+              }
+          } ~
+            pathPrefix("courses") {
+              pathEndOrSingleSlash {
+                post {
+                  entity(as[AssignCourseRequest]) {
+                    request =>
+                      complete(studentService.assign(studentId, request.courseId) map {
+                        case Failure(_) => BadRequest -> """{"result": "Error"}"""
+                        case _ => OK -> """{"result": "Ok"}"""
+                      })
+                  }
+                } ~
+                  get {
+                    complete(s"courses for student $studentId")
+                  }
+              } ~
+                pathPrefix(Segment) {
+                  courseId =>
+                    post {
+                      entity(as[AddScoreRequest]) {
+                        request =>
+                          complete {
+                            studentService.addScore(studentId, courseId, request.score)
+                              .map(_ => OK -> """{"result": "Ok"}""")
+                              .recover {
+                                case ex: Exception => BadRequest ->
+                                  s"""|{
+                                      |"result": "Error",
+                                      | "message": "${
+                                    ex.getMessage
+                                  }"
+                                      | }""".stripMargin
+                              }
+                          }
+                      }
+                    }
+                }
+            }
+      } ~
+        rootRoute
+    }
 }
 
 

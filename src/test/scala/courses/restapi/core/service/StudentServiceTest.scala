@@ -1,7 +1,7 @@
 package courses.restapi.core.service
 
 import courses.restapi.BaseServiceTest
-import courses.restapi.core.CourseId
+import courses.restapi.core.storage.Course.CourseId
 import courses.restapi.core.storage.{Student, StudentStorage}
 import org.mockito.Mockito._
 import org.mongodb.scala.Completed

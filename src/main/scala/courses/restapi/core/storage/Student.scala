@@ -1,9 +1,11 @@
 package courses.restapi.core.storage
 
-import courses.restapi.core.{CourseId, StudentId}
-import courses.restapi.http.routes.StudentDto
+import courses.restapi.core.storage.Course.CourseId
+import courses.restapi.core.storage.Student.StudentId
+import org.mongodb.scala.bson.ObjectId
 
 object Student {
+  type StudentId = ObjectId
   def apply(firstName: String, lastName: String, email: String): Student =  Student(new StudentId, firstName, lastName, email, Nil)
 
 }

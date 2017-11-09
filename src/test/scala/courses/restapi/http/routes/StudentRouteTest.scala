@@ -1,21 +1,21 @@
 package courses.restapi.http.routes
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.StatusCodes.OK
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
-import akka.http.scaladsl.server.{MethodRejection, Route}
+import akka.http.scaladsl.server.Route
+import com.mongodb.MongoException
 import courses.restapi.BaseServiceTest
 import courses.restapi.core.service.StudentService
-import courses.restapi.core.storage.Student
+import courses.restapi.core.storage.Student.StudentId
+import courses.restapi.core.storage.{ListStudent, Student}
+import courses.restapi.http.routes.StudentRoute._
+import courses.restapi.util._
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mongodb.scala.Completed
 import org.scalatest.mockito.MockitoSugar
 import spray.json.DefaultJsonProtocol
-import StudentRoute._
-import courses.restapi.util._
-import akka.http.scaladsl.model
-
-import com.mongodb.MongoException
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -29,6 +29,15 @@ class StudentRouteTest extends BaseServiceTest with SprayJsonSupport with Defaul
         Get("/students") ~> studentRoute ~> check {
           responseAs[Seq[StudentDto]] shouldEqual expectedResult
           status.intValue() shouldBe 200
+        }
+      }
+    }
+
+    "GET /students?avg=gt90" should {
+      "list outstanding students" in new Context {
+        Get("/students?min_avg=90") ~> studentRoute ~> check {
+          responseAs[Seq[StudentDto]] shouldEqual outstandingStudents.map(_.toDto)
+          status shouldBe OK
         }
       }
     }
@@ -71,7 +80,7 @@ class StudentRouteTest extends BaseServiceTest with SprayJsonSupport with Defaul
           s"""{"courseId": "$courseId"}""")
         Post(s"/students/${student1._id.toHexString}/courses", data) ~> studentRoute ~> check {
 
-          status shouldBe StatusCodes.OK
+          status shouldBe OK
           verify(studentService).assign(student1._id.toHexString, courseId)
         }
       }
@@ -92,7 +101,7 @@ class StudentRouteTest extends BaseServiceTest with SprayJsonSupport with Defaul
           ContentTypes.`application/json`,
           """{"score": 96}""")
         Post(s"/students/${student1._id.toHexString}/courses/$courseId", data) ~> studentRoute ~> check {
-          status shouldBe StatusCodes.OK
+          status shouldBe OK
         }
       }
       "reject 400 when fail" in new Context {
@@ -112,11 +121,14 @@ class StudentRouteTest extends BaseServiceTest with SprayJsonSupport with Defaul
 
     val student1: Student = Student("Saar", "Wexler", "saarwexler@gmail.com")
     val student2: Student = Student("BB", "Netanyaho", "BB@gov.il")
+    val outstandingStudents = Seq(
+      ListStudent(new StudentId, "Albert", "Einstein", "AE@AE.com", 99),
+      ListStudent(new StudentId, "Saar", "Wexler", "saarwexler@gmail.com", 100))
     val seq = Seq(student1, student2).map(_.toListStudent)
-    val expectedResult = Seq(student1.toDto, student2.toDto)
+    val expectedResult = Seq(student1, student2).map(_.toDto)
     val courseId = "A12334BCD"
 
-    when(studentService.getStudents).thenReturn(Future(seq))
+    when(studentService.listStudents).thenReturn(Future(seq))
     when(studentService.getStudent(anyString)).thenReturn(Future(None))
     when(studentService.getStudent(student1._id.toHexString)).thenReturn(Future(Some(student1)))
     when(studentService.createStudent(any[Student])).thenReturn(Future(new Completed))
@@ -124,6 +136,7 @@ class StudentRouteTest extends BaseServiceTest with SprayJsonSupport with Defaul
     when(studentService.assign(student1._id.toHexString, courseId)).thenReturn(Future(Success()))
     when(studentService.addScore(anyString, anyString, anyInt)).thenReturn(Future(throw new MongoException("bla bla")))
     when(studentService.addScore(student1._id.toHexString, courseId, 96)).thenReturn(Future())
+    when(studentService.listOutstandingStudents(90)).thenReturn(Future(outstandingStudents))
 
   }
 

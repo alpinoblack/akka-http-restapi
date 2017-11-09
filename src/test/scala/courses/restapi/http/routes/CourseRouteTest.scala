@@ -56,9 +56,9 @@ class CourseRouteTest extends BaseServiceTest with JsonSupport {
     val seq = Seq(course1, course2)
     val expectedResult = Seq(CourseDto(Some(course1._id.toString), course1.courseName), CourseDto(Some(course2._id.toString), course2.courseName))
 
-    val student1 = StudentDto(Some("ABCD123"), "Saar", "Wexler", "saarwexler@gmail.com")
+    val student1 = StudentDto(Some("ABCD123"), "Saar", "Wexler", "saarwexler@gmail.com", None)
 
-    val student2 = StudentDto(Some("1234ABCD"), "Yonit", "Levi", "Yonit@Channel2.co.il")
+    val student2 = StudentDto(Some("1234ABCD"), "Yonit", "Levi", "Yonit@Channel2.co.il", None)
 
     val fullCourseDto = FullCourseDto(course1._id.toHexString, course1.courseName, Seq(student1, student2))
 

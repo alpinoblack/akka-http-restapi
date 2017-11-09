@@ -1,6 +1,6 @@
 package courses.restapi.core.storage
 
-import courses.restapi.core.CourseId
+import courses.restapi.core.storage.Course.CourseId
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
 import org.mongodb.scala._
 import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY

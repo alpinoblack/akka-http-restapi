@@ -1,11 +1,11 @@
 package courses.restapi.core.service
 
-import courses.restapi.core.CourseId
+import courses.restapi.core.storage.Course.CourseId
 import courses.restapi.core.storage.{Course, CourseStorage, StudentStorage}
 import courses.restapi.http.routes.FullCourseDto
-import org.mongodb.scala.Completed
 import courses.restapi.http.routes.StudentRoute._
 import org.bson.types.ObjectId
+import org.mongodb.scala.Completed
 
 import scala.concurrent.{ExecutionContext, Future}
 
